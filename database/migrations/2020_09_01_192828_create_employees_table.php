@@ -25,7 +25,7 @@ class CreateEmployeesTable extends Migration
             $table->string('email');
             $table->string('photo_path')
                 ->nullable()
-                ->default(Employee::DEFAULT_PHOTO_PATH);
+                ->default(null);
             $table->integer('chief_id')
                 ->nullable()
                 ->default(null)
