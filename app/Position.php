@@ -9,6 +9,25 @@ use Illuminate\Database\Eloquent\Model;
 class Position extends Model
 {
     const TABLE_NAME = 'positions';
+    const MAX_LEVEL = 5;
+
+    public function __construct(array $attributes = [])
+    {
+        parent::__construct($attributes);
+        $admin = auth()->user();
+        if ($admin instanceof User) {
+            $this->attributes['admin_create_id'] = $admin->id;
+            $this->attributes['admin_update_id'] = $admin->id;
+        }
+    }
+
+    protected $fillable = [
+        'name',
+        'level',
+        'chief_position_id',
+        'admin_create_id',
+        'admin_update_id'
+    ];
 
     /**
      * @return Collection
@@ -16,6 +35,15 @@ class Position extends Model
     public function getEmployees(): Collection
     {
         return $this->hasMany(Employee::class, 'position_id', 'id')->get();
+    }
+
+    public function setChiefPosition(?Position $position) {
+        if ($position instanceof Position) {
+            $this->chief_position_id = $position->id;
+        } else {
+            $this->chief_position_id = null;
+        }
+        $this->save();
     }
 
     /**
@@ -29,6 +57,45 @@ class Position extends Model
             $result = $position->first();
         }
         return $result;
+    }
+
+    /**
+     * @return Collection
+     */
+    public function getSubPositions(int $minLevel = null): Collection
+    {
+        $subPositions = $this->hasMany(Position::class, 'chief_position_id')->get();
+        if (is_int($minLevel)) {
+            /** @var Position $subPosition */
+            foreach ($subPositions as $subPosition) {
+                if ($subPosition->level >= $minLevel) {
+                    $subPositions = $subPositions->merge($subPosition->getSubPositions($minLevel));
+                }
+            }
+        }
+        return $subPositions;
+    }
+
+    /**
+     * @param int $offset
+     * @param int $count
+     * @param bool $withChief
+     * @return Collection
+     */
+    static public function search(int $offset = 0, int $count = 10, bool $withChief = false): Collection
+    {
+        $queryBuilder = self::query();
+
+        /** @var Collection $positions */
+        $positions = $queryBuilder->offset($offset)->limit($count)->get();
+
+        if ($withChief) {
+            $positions->each(function(Position $position) {
+                $position->chiefPosition = $position->getChiefPosition();
+            });
+        }
+
+        return $positions;
     }
 
     /**

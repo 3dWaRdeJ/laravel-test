@@ -27,7 +27,7 @@ class EmployeeController extends Controller
     {
         $validate = [
             'offset' => 'integer',
-            'count' => 'integer',
+            'count' => 'integer|max:1000|min:1',
             'withPosition' => 'boolean',
             'withChief' => 'boolean'
         ];
@@ -101,6 +101,14 @@ class EmployeeController extends Controller
         return $this->response('New employee created', $employee);
     }
 
+    /**
+     * @param Request $request
+     * @return ResponseFactory|Application|Response
+     * @throws EmployeeException
+     * @throws FileNotFoundException
+     * @throws PositionException
+     * @throws ValidationException
+     */
     public function update(Request $request)
     {
         $validate = [
@@ -154,6 +162,12 @@ class EmployeeController extends Controller
         return $this->response('Employee updated', $employee);
     }
 
+    /**
+     * @param Request $request
+     * @return ResponseFactory|Application|Response
+     * @throws EmployeeException
+     * @throws ValidationException
+     */
     public function delete(Request $request)
     {
         $this->validate($request, [

@@ -5,7 +5,6 @@ use Illuminate\Database\Seeder;
 
 class PositionsTableSeeder extends Seeder
 {
-    const POSITION_MAX_LEVEL = 5;
     /**
      * Run the database seeds.
      *
@@ -18,7 +17,7 @@ class PositionsTableSeeder extends Seeder
 
     private function createPosition(Position $chiefPosition = null)
     {
-        $level = self::POSITION_MAX_LEVEL;
+        $level = Position::MAX_LEVEL;
         if ($chiefPosition instanceof Position) {
             $level = $chiefPosition->level - 1;
             if ($level < 1) {
