@@ -13,13 +13,19 @@ class User extends Authenticatable
 
     const TABLE_NAME = 'users';
 
+    public function __construct(array $attributes = [])
+    {
+        parent::__construct($attributes);
+        $this->attributes['api_token'] = str_random(20);
+    }
+
     /**
      * The attributes that are mass assignable.
      *
      * @var array
      */
     protected $fillable = [
-        'name', 'email', 'password',
+        'name', 'email', 'password', 'api_token'
     ];
 
     /**

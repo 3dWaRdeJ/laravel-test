@@ -13,6 +13,13 @@ use Illuminate\Http\Request;
 |
 */
 
-Route::middleware('auth:api')->get('/user', function (Request $request) {
-    return $request->user();
+use Illuminate\Support\Facades\Route;
+
+Route::group(['prefix' => '/v1'], function () {
+    Route::group(['prefix' => '/employee', 'middleware' => 'auth:api'], function() {
+        Route::get('', 'API\V1\EmployeeController@search');
+        Route::post('', 'API\V1\EmployeeController@store');
+        Route::put('', 'API\V1\EmployeeController@update');
+        Route::delete('', 'API\V1\EmployeeController@delete');
+    });
 });

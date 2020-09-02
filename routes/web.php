@@ -15,5 +15,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 Auth::routes();
-
+Route::get('/apiToken', function () {
+    return response(['api_token' => auth()->user()->api_token] , 200, ['Content-Type' => 'application/json']);
+})->middleware('auth');
 Route::get('/', 'HomeController@index')->name('home');
