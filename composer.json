@@ -8,7 +8,8 @@
         "php": "^7.1.3",
         "fideloper/proxy": "^4.0",
         "laravel/framework": "5.7.*",
-        "laravel/tinker": "^1.0"
+        "laravel/tinker": "^1.0",
+        "almasaeed2010/adminlte": "*"
     },
     "require-dev": {
         "beyondcode/laravel-dump-server": "^1.0",
@@ -41,10 +42,14 @@
     "scripts": {
         "post-root-package-install": [
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
+            "rsync -r --info=progress2 vendor/almasaeed2010/adminlte/plugins/ public/plugins",
+            "rsync -r --info=progress2 vendor/almasaeed2010/adminlte/dist/ public/dist",
             "@php artisan storage:link",
             "@php artisan migrate:fresh --seed"
         ],
         "post-update-cmd": [
+            "rsync -r --info=progress2 vendor/almasaeed2010/adminlte/plugins/ public/plugins",
+            "rsync -r --info=progress2 vendor/almasaeed2010/adminlte/dist/ public/dist",
             "@php artisan storage:link"
         ],
         "post-create-project-cmd": [
