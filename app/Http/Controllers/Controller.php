@@ -48,4 +48,50 @@ class Controller extends BaseController
 
         return response($responseArray, $code, $headers);
     }
+
+    /**
+     * @param int $draw
+     * @param int $recordsTotal
+     * @param int $recordsFiltered
+     * @param array $data
+     * @param string $error
+     * @param int $code
+     * @param string|null $message
+     * @param array $headers
+     */
+    protected function dataTableResponse(
+        int $draw,
+        int $recordsTotal,
+        int $recordsFiltered,
+        array $data,
+        ?string $error = null,
+        int $code = 200,
+        string $message = null,
+        array $headers = []
+    ) {
+        $success = false;
+        if (preg_match('/^2\d{2}$/', $code)) {
+            $success = true;
+        }
+
+        $headers = array_merge($this->defaultHeaders, $headers);
+        $responseArray = [
+            'message' => $message,
+            'success' => $success,
+            'data' => $data,
+            'draw' => $draw,
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+        ];
+
+        if (is_string($error)) {
+            $responseArray['error'] = $error;
+        }
+
+        if ($headers['Content-Type'] === 'application/json') {
+            $responseArray = json_encode($responseArray, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        }
+
+        return response($responseArray, $code, $headers);
+    }
 }

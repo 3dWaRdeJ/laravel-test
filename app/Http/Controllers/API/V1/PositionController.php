@@ -26,20 +26,62 @@ class PositionController extends Controller
     public function search(Request $request)
     {
         $validate = [
-            'offset' => 'integer',
-            'count' => 'integer|max:1000|min:1',
-            'withChief' => 'boolean'
+            'draw' => 'integer',
+            'start' => 'integer',
+            'length' => 'integer|max:1000|min:1',
+            'order' => 'array',
+            'order.*.column' => 'integer',
+            'order.*.dir' => 'in:asc,desc',
+            'columns' => 'array',
+            'columns.*.data' => 'string|nullable',
+            'columns.*.name' => 'string|nullable',
+            'columns.*.searchable' => 'string|in:true,false',
+            'columns.*.orderable' => 'string|in:true,false',
+            'search' => 'array',
+            'search.value' => 'string|nullable'
         ];
 
         $this->validate($request, $validate);
 
-        $offset = $request->query('offset', 0);
-        $count = $request->query('count', 10);
-        $withChief = $request->query('withChief', false);
+        $draw = $request->post('draw', 0);
+        $start = $request->query('start', 0);
+        $order = $request->query('order', []);
+        $length = $request->query('length', 10);
+        $columns = $request->query('columns', []);
+        $search = $request->query('search', []);
 
-        $position = Position::search($offset, $count, $withChief);
+        $orderColumn = 'id';
+        $orderDirection = 'asc';
+        $searchValue = '';
 
-        return $this->response('', $position);
+        if (isset($order[0])
+            && isset($order[0]['column'])
+        ) {
+            $orderColumnIndex = $order[0]['column'];
+            $orderDirection = $order[0]['dir'];
+            if (isset($columns[$orderColumnIndex])) {
+                $column = $columns[$orderColumnIndex];
+                if ($column['orderable'] === 'true') {
+                    $orderColumn = $column['data'];
+                }
+            }
+        }
+
+        if (isset($search['value'])) {
+            $searchValue = $search['value'];
+        }
+
+        $positions = Position::filter($start, $length, $orderColumn, $orderDirection, $searchValue);
+
+        $positions->each(function(Position $position) {
+            $position->chiefPosition = $position->getChiefPosition();
+        });
+        return $this->dataTableResponse(
+            $draw,
+            Position::query()->count(),
+            Position::filterBuilder($orderColumn, $orderDirection, $searchValue)->count(),
+            $positions->toArray()
+        );
     }
 
     /**
@@ -51,21 +93,22 @@ class PositionController extends Controller
     public function store (Request $request) {
         $validate = [
             'name' => 'required|string|min:3|max:255',
-            'chiefPosition' => 'integer',
-            'level' => 'required_without:chiefPosition|integer|min:1|max:' . Position::MAX_LEVEL
+            'chiefPosition' => 'integer|nullable',
         ];
 
         $this->validate($request, $validate);
 
         $name = $request->post('name');
         $chiefPositionId = $request->post('chiefPosition', null);
-        $level = $request->post('level', 1);
+        $level = 1;
 
         // check if chief position exist
         if (is_int($chiefPositionId)) {
             $chiefPosition = Position::getById($chiefPositionId);
-            if ($level > $chiefPosition->level) {
-                throw new PositionException('Wrong chief position - must be at least same level');
+            if ($chiefPosition->level > 1) {
+                $level = $chiefPosition->level - 1;
+            } else {
+                throw new PositionException('Wrong chief position, can`t be position with 1 level');
             }
         }
 
@@ -94,7 +137,6 @@ class PositionController extends Controller
             'id' => 'required|integer',
             'name' => 'required|string|min:3|max:255',
             'chiefPosition' => 'nullable|integer',
-            'level' => 'required|integer|min:1|max:' . Position::MAX_LEVEL
         ];
 
         $this->validate($request, $validate);
@@ -104,14 +146,15 @@ class PositionController extends Controller
 
         $name = $request->post('name');
         $chiefPositionId = $request->post('chiefPosition', null);
-        $level = $request->post('level');
+        $level = Position::MAX_LEVEL;
 
         // check if chief position exist
         if (is_int($chiefPositionId)) {
             $chiefPosition = Position::getById($chiefPositionId);
-            if ($level > $chiefPosition->level) {
-                throw new PositionException('Chief position must be at least same level');
+            if ($chiefPosition->level <= $position->level) {
+                throw new PositionException('Chief position must be higher level then current position');
             }
+            $level = $chiefPosition->level - 1;
         }
 
         $position->name = $name;
@@ -134,28 +177,31 @@ class PositionController extends Controller
     {
         $this->validate($request, [
             'id' => 'required|integer',
-            'withChildPosition' => 'boolean'
         ]);
 
         $positionId = $request->post('id');
-        $withChildPos = $request->post('withChildPosition', false);
         $position = Position::getById($positionId);
 
-        if ($withChildPos) {
-            $subPositions = $position->getSubPositions(1);
-        } else {
-            $subPositions = $position->getSubPositions();
-        }
+        $subPositions = $position->getSubPositions();
 
         /** @var Position $subPosition */
         foreach ($subPositions->sortBy('level') as $subPosition) {
             $subPosition->chief_position_id = null;
             $subPosition->save();
-            if ($withChildPos) {
-                $subPosition->delete();
+            $subPositionEmployees = $subPosition->getEmployees();
+            /** @var Employee $employee */
+            foreach ($subPositionEmployees as $employee) {
+                $employee->setChief(null);
             }
         }
 
+        $positionEmployees = $position->getEmployees();
+        /** @var Position $randomPosition */
+        $randomPosition = Position::query()->where('id', '<>', $position->id)->inRandomOrder()->first();
+        /** @var Employee $positionEmployee */
+        foreach ($positionEmployees as $positionEmployee) {
+            $positionEmployee->setPosition($randomPosition);
+        }
         $position->delete();
         return $this->response('Position deleted');
     }

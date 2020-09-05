@@ -93,6 +93,7 @@ class Employee extends Model
 
     /**
      * @param Employee|null $chief
+     * @return $this
      * @throws EmployeeException
      */
     public function setChief(?Employee $chief)
@@ -107,6 +108,7 @@ class Employee extends Model
         }
         $this->{'chief_id'} = $chief_id;
         $this->save();
+        return $this;
     }
 
     /**
@@ -147,6 +149,18 @@ class Employee extends Model
             $randomChief = $possibleChiefs->random(1)->first();
             $this->setChief($randomChief);
         }
+        return $this;
+    }
+
+    /**
+     * @param Position $position
+     * @return $this
+     */
+    public function setPosition(Position $position)
+    {
+        $this->position_id = $position->id;
+        $this->save();
+        return $this;
     }
 
     /**

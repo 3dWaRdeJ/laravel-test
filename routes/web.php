@@ -19,3 +19,4 @@ Route::get('/apiToken', function () {
     return response(['api_token' => auth()->user()->api_token] , 200, ['Content-Type' => 'application/json']);
 })->middleware('auth');
 Route::get('/', 'HomeController@index')->name('home');
+Route::get('/position', 'HomeController@position');

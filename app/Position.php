@@ -3,6 +3,7 @@
 namespace App;
 
 use App\Exceptions\PositionException;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 
@@ -79,23 +80,38 @@ class Position extends Model
     /**
      * @param int $offset
      * @param int $count
-     * @param bool $withChief
+     * @param string $orderColumn
+     * @param string $orderDirection
+     * @param string $searchValue
      * @return Collection
      */
-    static public function search(int $offset = 0, int $count = 10, bool $withChief = false): Collection
+    static public function filter(
+        int $offset = 0,
+        int $count = 10,
+        string $orderColumn = 'name',
+        string $orderDirection = 'asc',
+        string $searchValue = ''
+    ): Collection
     {
-        $queryBuilder = self::query();
-
         /** @var Collection $positions */
+        $queryBuilder = self::filterBuilder($orderColumn, $orderDirection, $searchValue);
         $positions = $queryBuilder->offset($offset)->limit($count)->get();
 
-        if ($withChief) {
-            $positions->each(function(Position $position) {
-                $position->chiefPosition = $position->getChiefPosition();
-            });
-        }
-
         return $positions;
+    }
+
+    static public function filterBuilder(
+        string $orderColumn = 'name',
+        string $orderDirection = 'asc',
+        string $searchValue = ''
+    ): Builder {
+        $queryBuilder = self::query();
+
+        return $queryBuilder
+            ->orderBy($orderColumn, $orderDirection)
+            ->where('name', 'LIKE' , '%' . $searchValue . '%')
+            ->orWhere('updated_at', 'LIKE', '%' . $searchValue . '%')
+            ->orWhere('level', 'LIKE' , '%' . $searchValue . '%');
     }
 
     /**

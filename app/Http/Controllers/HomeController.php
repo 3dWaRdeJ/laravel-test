@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Position;
 use Illuminate\Contracts\Support\Renderable;
 use Illuminate\Http\Request;
 
@@ -25,5 +26,14 @@ class HomeController extends Controller
     public function index()
     {
         return view('home', ['user' => auth()->user()]);
+    }
+
+    public function position()
+    {
+        $positions = Position::all();
+        return view('positions', [
+            'positions' => $positions,
+            'apiToken' => auth()->user()->api_token
+        ]);
     }
 }
