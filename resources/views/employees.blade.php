@@ -110,8 +110,8 @@
                         <div class="custom-file">
                             <input type="file" accept="image/jpeg,image/png" class="custom-file-input" id="inputPhoto" name="photo">
                             <label class="custom-file-label" for="customFile" id="inputPhoto-name">Choose photo</label>
+                            <span id="inputPhoto-error" class="error invalid-feedback"></span>
                         </div>
-                        <span id="inputPhoto-error" class="error invalid-feedback"></span>
                     </div>
                     <input type="hidden" id="inputId" name="id">
                     <div class="form-group">
@@ -252,7 +252,7 @@
     <script>
         //Date range picker
         $('#startDate').datetimepicker({
-            format: 'DD.MM.Y'
+            format: 'Y-MM-DD'
         });
     </script>
     <script>
@@ -435,7 +435,6 @@
                 success: function(response) {
                     let newEmployees = response.data;
                     newEmployees.forEach(function(newEmployee, i, arr) {
-                        newEmployee
                         employees[newEmployee.id] = newEmployee;
                     });
                     updateChiefSelect('selectChief');
@@ -468,6 +467,7 @@
             //clear input data
             let inputs = $('#inputPhoto, #inputName, #inputPhone, #inputEmail, #inputSalary, #inputStartDate, #selectChief, #selectPosition');
             $('#inputPhoto-name').text('Choose photo');
+            $('#inputPhoto-img').attr('src', '{{\App\Employee::DEFAULT_PHOTO_PATH}}');
             $('#inputName-length').text('0/255');
             updatePositionSelect('selectPosition');
             inputs.val(null);
@@ -499,6 +499,11 @@
                     $('#inputEmail').val(employee.email);
                     if (positions[employee.position_id] === undefined) {
                         positions[employee.position_id] = employee.position;
+                    }
+                    if (employee.photo_path !== null) {
+                        $('#inputPhoto-img').attr('src', employee.photo_path)
+                    } else {
+                        $('#inputPhoto-img').attr('src', '{{\App\Employee::DEFAULT_PHOTO_PATH}}');
                     }
                     updatePositionSelect('selectPosition')
                     $('#selectPosition').val(employee.position_id);
@@ -645,13 +650,13 @@
 
             if (photoFile.type !== 'image/png' && photoFile.type !== 'image/jpeg') {
                 message = 'wrong file type must be png or jpg';
-            } else if (photoFile.size > 1024 * 1024 * 1) {
-                message = 'photo file size must be less then 5 MB'
+            } else if (photoFile.size > 1024 * 1024 * 5) {
+                message = 'Photo file size must be less then 5 MB'
             } else {
                 isValid = true;
             }
 
-            updateInput(this.id, isValid, message);
+            updateInput(id, isValid, message);
             if (isValid) {
                 $('#' + id + '-name').text(photoFile.name);
             } else {
@@ -755,9 +760,9 @@
             let isValid = false;
             let message = '';
             let date = $('#' + id).val();
-            let regEx = /^(0[1-9]|[1-2][0-9]|3[0-1])\.(0[1-9]|1[0-2])\.\d{4}$/;
+            let regEx = /^\d{4}\-(0[1-9]|1[0-2])\-(0[1-9]|[1-2][0-9]|3[0-1])$/;
             if (regEx.test(date) == false) {
-                message = 'Wrong date format, must be like \'31.01.2020\'';
+                message = 'Wrong date format, must be like \'2020-01-31\'';
             } else if (Date.parse(date) === NaN) {
                 message = 'Wrong date';
             } else {

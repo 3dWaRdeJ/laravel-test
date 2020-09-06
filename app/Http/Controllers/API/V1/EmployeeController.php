@@ -75,7 +75,6 @@ class EmployeeController extends Controller
         $employees->each(function (Employee $employee) {
             $employee->position = $employee->getPosition();
             $employee->chief = $employee->getChief();
-            $employee->start_date = date('d.m.Y', strtotime($employee->start_date));
         });
 
         return $this->dataTableResponse(
@@ -101,7 +100,7 @@ class EmployeeController extends Controller
             'email' => 'required|string|email|max:255',
             'position' => 'required|integer',
             'salary' => 'required|numeric|between:0,500000',
-            'startDate' => 'required|date|regex:/^\d{2}\.\d{2}\.\d{4}$/',
+            'startDate' => 'required|date|regex:/^\d{4}\-\d{2}\-\d{2}$/',
             'chief' => 'integer|nullable',
             'photo' => 'file|mimes:png,jpeg|dimensions:min_width=300,min_height=300|max:' . 5 * 1024
         ];
@@ -160,7 +159,7 @@ class EmployeeController extends Controller
             'email' => 'required|string|email|max:255',
             'position' => 'required|integer',
             'salary' => 'required|numeric|between:0,500000',
-            'startDate' => 'required|date|regex:/^\d{2}\.\d{2}\.\d{4}$/',
+            'startDate' => 'required|date|regex:/^\d{4}\-\d{2}\-\d{2}$/',
             'chief' => 'integer|nullable',
             'photo' => 'file|mimes:png,jpeg|dimensions:min_width=300,min_height=300|max:' . 5 * 1024
         ];
