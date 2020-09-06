@@ -106,6 +106,7 @@
                         <div class="text-center">
                             <img id="inputPhoto-img" class="profile-user-img img-fluid img-circle" src="{{ App\Employee::DEFAULT_PHOTO_PATH }}">
                         </div>
+                        <label class="text-gray">File format png/jpeg up to 5MB, the minimum size 300x300px</label>
                         <div class="custom-file">
                             <input type="file" accept="image/jpeg,image/png" class="custom-file-input" id="inputPhoto" name="photo">
                             <label class="custom-file-label" for="customFile" id="inputPhoto-name">Choose photo</label>
