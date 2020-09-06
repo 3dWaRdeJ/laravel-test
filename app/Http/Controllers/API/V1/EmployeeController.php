@@ -26,22 +26,64 @@ class EmployeeController extends Controller
     public function search(Request $request)
     {
         $validate = [
-            'offset' => 'integer',
-            'count' => 'integer|max:1000|min:1',
-            'withPosition' => 'boolean',
-            'withChief' => 'boolean'
+            'draw' => 'integer',
+            'start' => 'integer',
+            'length' => 'integer|max:1000|min:1',
+            'order' => 'array',
+            'order.*.column' => 'integer',
+            'order.*.dir' => 'in:asc,desc',
+            'columns' => 'array',
+            'columns.*.data' => 'string|nullable',
+            'columns.*.name' => 'string|nullable',
+            'columns.*.searchable' => 'string|in:true,false',
+            'columns.*.orderable' => 'string|in:true,false',
+            'search' => 'array',
+            'search.value' => 'string|nullable'
         ];
-
         $this->validate($request, $validate);
 
-        $offset = $request->query('offset', 0);
-        $count = $request->query('count', 10);
-        $withPosition = $request->query('withPosition', false);
-        $withChief = $request->query('withChief', false);
+        $draw = $request->post('draw', 0);
+        $start = $request->query('start', 0);
+        $order = $request->query('order', []);
+        $length = $request->query('length', 10);
+        $columns = $request->query('columns', []);
+        $search = $request->query('search', []);
 
-        $employees = Employee::search($offset, $count, $withChief, $withPosition);
+        $orderColumn = 'id';
+        $orderDirection = 'asc';
+        $searchValue = '';
 
-        return $this->response('', $employees);
+        if (isset($order[0])
+            && isset($order[0]['column'])
+        ) {
+            $orderColumnIndex = $order[0]['column'];
+            $orderDirection = $order[0]['dir'];
+            if (isset($columns[$orderColumnIndex])) {
+                $column = $columns[$orderColumnIndex];
+                if ($column['orderable'] === 'true') {
+                    $orderColumn = $column['data'];
+                }
+            }
+        }
+
+        if (isset($search['value'])) {
+            $searchValue = $search['value'];
+        }
+
+        $employees = Employee::filter($start, $length, $orderColumn, $orderDirection, $searchValue);
+
+        $employees->each(function (Employee $employee) {
+            $employee->position = $employee->getPosition();
+            $employee->chief = $employee->getChief();
+            $employee->start_date = date('d.m.Y', strtotime($employee->start_date));
+        });
+
+        return $this->dataTableResponse(
+            $draw,
+            Employee::query()->count(),
+            Employee::filterBuilder($orderColumn, $orderDirection, $searchValue)->count(),
+            $employees->toArray()
+        );
     }
 
     /**

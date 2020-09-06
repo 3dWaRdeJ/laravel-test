@@ -20,3 +20,4 @@ Route::get('/apiToken', function () {
 })->middleware('auth');
 Route::get('/', 'HomeController@index')->name('home');
 Route::get('/position', 'HomeController@position');
+Route::get('/employee', 'HomeController@employee');

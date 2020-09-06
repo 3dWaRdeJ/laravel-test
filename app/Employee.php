@@ -4,8 +4,8 @@ namespace App;
 
 use App\Exceptions\EmployeeException;
 use Illuminate\Contracts\Filesystem\FileNotFoundException;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Query\Builder;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
@@ -64,31 +64,46 @@ class Employee extends Model
         return $employee;
     }
 
-    static public function search(int $offset = 0, int $count = 10, bool $withChief = false, bool $withPosition = false)
-    {
-        /** @var Builder $queryBuilder */
-        $queryBuilder = Employee::query();
+    /**
+     * @param int $offset
+     * @param int $count
+     * @param string $orderColumn
+     * @param string $orderDirection
+     * @param string $searchValue
+     * @return Collection
+     */
+    static public function filter(
+        int $offset = 0,
+        int $count = 10,
+        string $orderColumn = 'id',
+        string $orderDirection = 'asc',
+        string $searchValue = ''
+    ): Collection {
+        $queryBuilder = self::filterBuilder($orderColumn, $orderDirection, $searchValue);
 
-        $employees = $queryBuilder->offset($offset)->limit($count)->get();
+        $queryBuilder->offset($offset)
+            ->limit($count);
+        return $queryBuilder->get();
+    }
 
-        if ($withPosition) {
-            $employees->each(function (Employee $employee) {
-                $employee->position = $employee->getPosition();
-            });
-        }
+    static public function filterBuilder(
+        string $orderColumn = 'id',
+        string $orderDirection = 'asc',
+        string $searchValue = ''
+    ): Builder {
+        $queryBuilder = self::query();
 
-        if ($withChief) {
-            $employees->each(function (Employee $employee) use ($withPosition){
-                $chief = $employee->getChief();
-                $employee->chief = $chief;
-                if ($withPosition
-                    && $chief instanceof Employee
-                ) {
-                    $chief->position = $chief->getPosition();
-                }
-            });
-        }
-        return $employees;
+        return $queryBuilder
+            ->orderBy($orderColumn, $orderDirection)
+            ->join(Position::TABLE_NAME, 'employees.position_id', '=', 'positions.id')
+            ->select('employees.*', 'positions.name as positionName')
+            ->where('full_name', 'like', "%$searchValue%")
+            ->orWhere('positions.name', 'like', "%$searchValue%")
+            ->orWhere('salary', 'like', "%$searchValue%")
+            ->orWhere('start_date', 'like', "%$searchValue%")
+            ->orWhere('phone', 'like', "%$searchValue%")
+            ->orWhere('email', 'like', "%$searchValue%")
+            ->orderBy($orderColumn, $orderDirection);
     }
 
     /**

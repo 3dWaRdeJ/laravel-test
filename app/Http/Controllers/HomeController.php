@@ -36,4 +36,11 @@ class HomeController extends Controller
             'apiToken' => auth()->user()->api_token
         ]);
     }
+
+    public function employee()
+    {
+        return view('employees', [
+            'apiToken' => auth()->user()->{'api_token'}
+        ]);
+    }
 }
